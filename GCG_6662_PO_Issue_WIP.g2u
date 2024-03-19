@@ -1,0 +1,258 @@
+Program.Sub.Preflight.Start
+Program.External.Include.Library("450100.lib")
+Program.External.Include.Library("2003.lib")
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String,"")
+V.Local.sPart.Declare(String,"")
+V.Local.sReceiver.Declare(String,"")
+
+F.Intrinsic.Control.SelectCase(V.Caller.Hook)
+	'PO Receipt Populate
+	F.Intrinsic.Control.Case(15020)
+		V.Passed.000316.Set("WO Browser")
+		F.Intrinsic.Control.CallSub(Exit)
+		
+	'PO Receipt Post OK Btn
+	F.Intrinsic.Control.Case(15040)
+		'Receiver Num
+		'Receiver Suffix
+		F.Intrinsic.String.Build("{0}{1}",V.Passed.000010,V.Passed.000153,V.Local.sReceiver)
+		F.Intrinsic.Control.CallSub(Process_WO,"Receiver",V.Local.sReceiver.Trim)
+		F.Intrinsic.Control.CallSub(Exit)
+		
+	'PO Receipt Script 1
+	F.Intrinsic.Control.Case(15050)
+		'Part  000071
+		'Rev   000025
+		F.Intrinsic.String.RPad(V.Passed.000071," ",17,V.Local.sPart)
+		F.Intrinsic.String.Build("{0}{1}",V.Local.sPart,V.Passed.000025,V.Local.sPart)
+		F.Intrinsic.Control.CallSub(WO_Browse,"Part",V.Local.sPart.Trim)
+		F.Intrinsic.Control.CallSub(Exit)
+		
+	'P10 Mobile Transaction
+	F.Intrinsic.Control.Case(31951)
+		F.Intrinsic.Control.CallSub(Wireless_P10,"TransID",V.Passed.DATA-TRANSID)
+		
+	F.Intrinsic.Control.CaseElse
+		F.Intrinsic.Control.CallSub(Exit)
+		
+F.Intrinsic.Control.EndSelect
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: GCG_6662_PO_Issue_WIP.g2u {0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Exit)
+Function.Intrinsic.Control.EndIf
+Program.Sub.Main.End
+
+Program.Sub.Exit.Start
+F.Intrinsic.Control.SetErrorHandler("Exit_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String,"")
+
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Exit_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.Control.End
+Function.Intrinsic.Control.EndIf
+Program.Sub.Exit.End
+
+Program.Sub.WO_Browse.Start
+F.Intrinsic.Control.SetErrorHandler("WO_Browse_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String,"")
+V.Local.sRet.Declare(String,"")
+V.Local.sSql.Declare(String,"")
+V.Local.sTitles.Declare(String,"")
+V.Local.sWidths.Declare(String,"")
+'WO			000087
+'Suffix		000088
+
+F.Intrinsic.UI.SetBrowserHotTypeAhead(True)
+
+F.ODBC.Connection!Con.OpenCompanyConnection
+	
+F.Intrinsic.String.Build("Select Distinct B.Job, B.Suffix, PO_Part, B.Part From GCG_6662_Part_Maint A Join V_Job_Header B on A.WO_Part = B.Part Where PO_Part = '{0}' and Date_Closed = '1900-01-01' Order by B.Job, B.Suffix",V.Args.Part,V.Local.sSql)
+	
+V.Local.sTitles.Set("Job*!*Suffix*!*PO Part*!*WO Part")
+V.Local.sWidths.Set("1800*!*1800*!*1800*!*1800")
+
+F.Intrinsic.String.Split(V.Local.sTitles,"*!*",V.Local.sTitles)
+F.Intrinsic.String.Split(V.Local.sWidths,"*!*",V.Local.sWidths)
+	
+F.Intrinsic.UI.Browser("Select Job/Suffix","con",V.Local.sSql,V.Local.sTitles,V.Local.sWidths,10200,8700,V.Local.sRet)
+	
+F.Intrinsic.Control.If(V.Local.sRet,<>,"***CANCEL***")
+	F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+	V.Passed.000087.Set(V.Local.sRet(0))
+	V.Passed.000088.Set(V.Local.sRet(1))
+F.Intrinsic.Control.EndIf
+
+F.ODBC.Connection!Con.Close
+	
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("WO_Browse_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: GCG_6662_PO_Issue_WIP.g2u {0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Exit)
+Function.Intrinsic.Control.EndIf
+Program.Sub.WO_Browse.End
+
+Program.Sub.Process_WO.Start
+F.Intrinsic.Control.SetErrorHandler("WO_Browse_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String,"")
+V.Local.sSql.Declare(String,"")
+V.Local.i.Declare(Long,0)
+V.Local.sFilter.Declare(String,"")
+V.Local.iCount.Declare(Long,0)
+V.Local.iQtySum.Declare(Long,0)
+V.Local.iDay.Declare(Long,0)
+V.Local.iMonth.Declare(Long,0)
+V.Local.iYear.Declare(Long,0)
+V.Local.fQtyRem.Declare(Float,0)
+V.Local.iL.Declare(Long,0)
+V.Local.sBin.Declare(String,"")
+V.Local.sLot.Declare(String,"")
+V.Local.sQtyIssue.Declare(String,"")
+
+F.Intrinsic.Date.Day(V.Ambient.Date,V.Local.iDay)
+F.Intrinsic.Date.Month(V.Ambient.Date,V.Local.iMonth)
+F.Intrinsic.Date.Year(V.Ambient.Date,V.Local.iYear)
+
+F.ODBC.Connection!Con.OpenCompanyConnection
+
+F.ODBC.Connection!Con.ExecuteAndReturn("Select Text1 From V_Op_Header Where ID = '402203' and Sequence = '0001'",V.Local.sBin)
+
+F.Intrinsic.String.Build("Select DISTINCT concat(concat(Receiver_No,PURCHASE_ORDER),PO_LINE4) as Rec_Key, RECEIVER_NO, PURCHASE_ORDER, PO_LINE4, PART, JOB, SUFFIX, SEQUENCE, Qty_Received FROM V_PO_RECEIVER A JOIN GCG_6662_PART_MAINT B on A.PART = B.PO_PART Where RECEIVER_NO = '{0}' and Job <> ''",V.Args.Receiver,V.Local.sSql)
+
+F.Data.DataTable.CreateFromSQL("POLINE","con",V.Local.sSql,True)
+
+F.Intrinsic.Control.If(V.DataTable.POLINE.RowCount--,<>,-1)
+	F.Intrinsic.String.Build("Select DISTINCT concat(concat(RECEIVER,PURCHASE_ORDER),PO_LINE) as Rec_Key, Bin, Heat, Lot, Serial_Number, Quantity From V_Item_History Where Receiver = '{0}' and Quantity > 0",V.Args.Receiver,V.Local.sSql)
+	F.Data.DataTable.CreateFromSQL("ItemHist","con",V.Local.sSql,True)
+	F.Intrinsic.Control.If(v.DataTable.ItemHist.RowCount--,<>,-1)
+		F.Intrinsic.Control.For(V.Local.i,0,V.DataTable.ItemHist.RowCount--,1)
+			F.Intrinsic.String.Build("Rec_Key = '{0}'",V.DataTable.ItemHist(V.Local.i).Rec_Key!FieldValTrim,V.Local.sFilter)
+			F.Data.DataView.Create("POLINE","Temp",22,V.Local.sFilter,"")
+			F.Intrinsic.Control.If(V.DataView.POLINE!Temp.RowCount--,<>,-1)
+'				F.Data.DataTable.AddRow("450100","Part",V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Part!FieldValTrim,"Quantity",V.DataTable.ItemHist(V.Local.i).Quantity!FieldVal,"Lot",V.DataTable.ItemHist(V.Local.i).Lot!FieldValTrim,"Bin",V.DataTable.ItemHist(V.Local.i).Bin!FieldValTrim,"Heat",V.DataTable.ItemHist(V.Local.i).Heat!FieldValTrim,"Serial",V.DataTable.ItemHist(V.Local.i).Serial_Number!FieldValTrim,"WONumber",V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Job!FieldValTrim,"WOSuffix",V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Suffix!FieldValTrim,"WOSeq",V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Sequence!FieldValTrim)
+				F.Intrinsic.String.Build("Select DISTINCT Job, Suffix, Seq, Part, Units From V_Job_Operations Where Job = '{0}' and Suffix = '{1}' and Seq <> '{2}' and Seq < '995000' AND LMO = 'M'",V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Job!FieldValTrim,V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Suffix!FieldValTrim,V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Sequence!FieldValTrim,V.Local.sSql)
+				F.Data.DataTable.CreateFromSQL("JobOp","con",V.Local.sSql,True)
+				
+				F.Intrinsic.Control.For(V.Local.iCount,0,V.DataTable.JobOp.RowCount--,1)
+					F.Intrinsic.String.Build("select A.Lot, A.Bin, A.Heat, A.Serial_Number, A.Quantity from ITEM_MASTER A LEFT JOIN V_INVENTORY_ALL B ON A.PART = B.PART Where A.Part = '{0}' and A.Quantity > 0 and A.BIN = B.BIN Order By Lot",V.DataTable.JobOp(V.Local.iCount).Part!FieldValTrim,V.Local.sSql)
+					'F.Intrinsic.String.Build("select Lot, Bin, Heat, Serial_Number, Quantity from ITEM_MASTER Where Part = '{0}' and Quantity > 0 Order By Lot",V.DataTable.JobOp(V.Local.iCount).Part!FieldValTrim,V.Local.sSql)
+					F.Intrinsic.Control.If(V.DataTable.Lot.Exists)
+						F.Data.DataTable.Close("Lot")
+					F.Intrinsic.Control.EndIf
+					F.Data.DataTable.CreateFromSQL("Lot","con",V.Local.sSql,True)
+					F.Intrinsic.Math.Mult(V.DataTable.JobOp(V.Local.iCount).Units!FieldVal,V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Qty_Received!FieldValFloat,V.Local.fQtyRem)
+					F.Intrinsic.Control.For(V.Local.iL,0,V.DataTable.Lot.RowCount--,1)
+						F.Intrinsic.Control.If(V.Local.fQtyRem,<=,V.DataTable.Lot(V.Local.iL).Quantity!FieldValFloat,"AND",V.Local.fQtyRem,>,0)
+							F.Intrinsic.String.Format(V.Local.fQtyRem,"###0.00",V.Local.sQtyIssue)
+							F.Data.DataTable.AddRow("450100","Part",V.DataTable.JobOp(V.Local.iCount).Part!FieldValTrim,"Quantity",V.Local.sQtyIssue,"WONumber",V.DataTable.JobOp(V.Local.iCount).Job!FieldValTrim,"WOSuffix",V.DataTable.JobOp(V.Local.iCount).Suffix!FieldValTrim,"WOSeq",V.DataTable.JobOp(V.Local.iCount).Seq!FieldValTrim,"Lot",V.DataTable.Lot(V.Local.iL).Lot!FieldValTrim,"Bin",V.DataTable.Lot(V.Local.iL).Bin!FieldValTrim,"Heat",V.DataTable.Lot(V.Local.iL).Heat!FieldValTrim,"Serial",V.DataTable.Lot(v.Local.iL).Serial_Number!FieldValTrim)
+							V.Local.fQtyRem.Set(0)
+						F.Intrinsic.Control.Else
+							F.Intrinsic.Control.If(V.Local.fQtyRem,>,0)
+								F.Intrinsic.String.Format(V.DataTable.Lot(V.Local.iL).Quantity!FieldValFloat,"###0.00",V.Local.sQtyIssue)
+								F.Data.DataTable.AddRow("450100","Part",V.DataTable.JobOp(V.Local.iCount).Part!FieldValTrim,"Quantity",V.Local.sQtyIssue,"WONumber",V.DataTable.JobOp(V.Local.iCount).Job!FieldValTrim,"WOSuffix",V.DataTable.JobOp(V.Local.iCount).Suffix!FieldValTrim,"WOSeq",V.DataTable.JobOp(V.Local.iCount).Seq!FieldValTrim,"Lot",V.DataTable.Lot(V.Local.iL).Lot!FieldValTrim,"Bin",V.DataTable.Lot(V.Local.iL).Bin!FieldValTrim,"Heat",V.DataTable.Lot(V.Local.iL).Heat!FieldValTrim,"Serial",V.DataTable.Lot(v.Local.iL).Serial_Number!FieldValTrim)
+								F.Intrinsic.Math.Sub(V.Local.fQtyRem,V.DataTable.Lot(V.Local.iL).Quantity!FieldValFloat,V.Local.fQtyRem)
+							F.Intrinsic.Control.Else
+								F.Intrinsic.Control.ExitFor(V.Local.iL)
+							F.Intrinsic.Control.EndIf
+						F.Intrinsic.Control.EndIf
+					F.Intrinsic.Control.Next(V.Local.iL)
+					F.Intrinsic.Control.If(V.Local.fQtyRem,>,0)
+						F.Intrinsic.String.Format(V.Local.fQtyRem,"###0.00",V.Local.sQtyIssue)
+						F.Intrinsic.Control.If(V.DataTable.Lot.RowCount--,<>,-1)
+							F.Data.DataTable.AddRow("450100","Part",V.DataTable.JobOp(V.Local.iCount).Part!FieldValTrim,"Quantity",V.Local.sQtyIssue,"WONumber",V.DataTable.JobOp(V.Local.iCount).Job!FieldValTrim,"WOSuffix",V.DataTable.JobOp(V.Local.iCount).Suffix!FieldValTrim,"WOSeq",V.DataTable.JobOp(V.Local.iCount).Seq!FieldValTrim,"Bin",V.DataTable.Lot(V.DataTable.Lot.RowCount--).Bin!FieldValTrim)
+						F.Intrinsic.Control.EndIf
+						V.Local.fQtyRem.Set(0)
+					F.Intrinsic.Control.EndIf
+				F.Intrinsic.Control.Next(V.Local.iCount)
+				F.Data.DataTable.Close("JobOp")
+				
+				F.Intrinsic.Control.If(V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Qty_Received!FieldVal,>,0)
+					F.Intrinsic.String.Build("Select Qty_Order - Qty_Completed From V_Job_Header Where Job = '{0}' and Suffix = '{1}'",V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Job!FieldValTrim,V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Suffix!FieldValTrim,V.Local.sSql)
+					F.ODBC.Connection!Con.ExecuteAndReturn(V.Local.sSql,V.Local.iQtySum)
+					F.Intrinsic.Control.If(V.Local.iQtySum,>,0)
+						F.Intrinsic.String.Build("{0}-{1}",V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Job!FieldValTrim,V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Suffix!FieldValTrim,V.Local.sLot)
+						F.Intrinsic.Control.If(V.Local.iQtySum,=,V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Qty_Received!FieldVal)
+							F.Data.DataTable.AddRow("2003","Mode","NS","WONum",V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Job!FieldValTrim,"WOSuffix",V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Suffix!FieldValTrim,"CloseWO","Y","Quantity",V.Local.iQtySum,"XferYear",V.Local.iYear,"XferDay",V.Local.iDay,"XferMonth",V.Local.iMonth,"PrintLabels","Y","CostMethod","R","UpdateInv","Y")
+							F.Data.DataTable.AddRow("2003File","WONum",V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Job!FieldValTrim,"WOSuffix",V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Suffix!FieldValTrim,"Bin",V.Local.sBin,"Lot",V.Local.sLot,"SpecificQuantity",V.Local.iQtySum)
+						F.Intrinsic.Control.Else
+							F.Data.DataTable.AddRow("2003","Mode","NS","WONum",V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Job!FieldValTrim,"WOSuffix",V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Suffix!FieldValTrim,"CloseWO","N","Quantity",V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Qty_Received!FieldVal,"XferYear",V.Local.iYear,"XferDay",V.Local.iDay,"XferMonth",V.Local.iMonth,"PrintLabels","Y","CostMethod","R","UpdateInv","Y")
+							F.Data.DataTable.AddRow("2003File","WONum",V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Job!FieldValTrim,"WOSuffix",V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Suffix!FieldValTrim,"Bin",V.Local.sBin,"Lot",V.Local.sLot,"SpecificQuantity",V.DataView.POLINE!Temp(V.DataView.POLINE!Temp.RowCount--).Qty_Received!FieldVal)
+						F.Intrinsic.Control.EndIf
+					F.Intrinsic.Control.EndIf
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.EndIf
+			F.Data.DataView.Close("POLINE","Temp")
+			F.Intrinsic.Control.If(V.DataTable.450100.RowCount--,<>,-1)
+				F.Intrinsic.Control.CallSub(450100Sync)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Next(V.Local.i)
+	F.Intrinsic.Control.EndIf
+	F.Data.DataTable.Close("ItemHist")
+F.Intrinsic.Control.EndIf
+
+F.ODBC.Connection!Con.Close
+
+F.Intrinsic.Control.If(V.DataTable.2003.RowCount--,<>,-1)
+	F.Intrinsic.Control.CallSub(2003Sync)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("WO_Browse_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: GCG_6662_PO_Issue_WIP.g2u {0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Exit)
+Function.Intrinsic.Control.EndIf
+Program.Sub.Process_WO.End
+
+Program.Sub.Wireless_P10.Start
+F.Intrinsic.Control.SetErrorHandler("WO_Browse_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String,"")
+V.Local.sSql.Declare(String,"")
+V.Local.sRet.Declare(String,"")
+
+'Get FIELD_1 (PO), FIELD_2 (Line), FIELD_3 (Bin), FIELD_4 (Lot), Field_5 (Heat), Field_6 (Serial), FIELD_8 (Qty), FIELD_9 (Receiver), FIELD_12 (Job), FIELD_13 (Suffix), FIELD_14 (Seq)
+'F.Intrinsic.String.Build("select TRANS_ID, SEQ, TRANS_TYPE, FIELD_1, FIELD_2, FIELD_8 from V_WIRELESS_LINE where TRANS_ID = '{0}' and SEQ = '0000' and TRANS_TYPE = 'P10';",V.Args.TransID,V.Local.sSQL)
+F.Intrinsic.String.Build("select FIELD_9 from V_WIRELESS_LINE where TRANS_ID = '{0}' and SEQ = '0000' and TRANS_TYPE = 'P10';",V.Args.TransID,V.Local.sSQL)
+F.ODBC.Connection!Con.OpenCompanyConnection
+F.ODBC.Connection!Con.ExecuteAndReturn(V.Local.sSql,V.Local.sRet)
+F.ODBC.Connection!Con.Close
+
+F.Intrinsic.Control.If(v.Local.sRet.Trim,<>,"")
+	F.Intrinsic.Control.CallSub(Process_WO,"Receiver",V.Local.sRet.Trim)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("WO_Browse_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: GCG_6662_PO_Issue_WIP.g2u {0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.Control.CallSub(Exit)
+Function.Intrinsic.Control.EndIf
+Program.Sub.Wireless_P10.End
