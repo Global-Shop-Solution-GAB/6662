@@ -1,0 +1,373 @@
+Program.Sub.ScreenSU.Start
+Gui.FormMaint..Create
+Gui.FormMaint..Caption("PO Part Maintenance Screen")
+Gui.FormMaint..Size(6825,10200)
+Gui.FormMaint..MinX(0)
+Gui.FormMaint..MinY(0)
+Gui.FormMaint..Position(0,0)
+Gui.FormMaint..BackColor(-2147483633)
+Gui.FormMaint..MousePointer(0)
+Gui.FormMaint..Event(UnLoad,FormMaint_UnLoad)
+Gui.FormMaint.lblPOPart.Create(Label,"PO Part",True,1935,255,0,165,195,True,0,"Arial",8,-2147483633,0)
+Gui.FormMaint.lblWOPart.Create(Label,"WO Part",True,1935,255,0,2925,195,True,0,"Arial",8,-2147483633,0)
+Gui.FormMaint.txtPOPart.Create(TextBox,"",True,2175,300,0,135,450,True,0,"Arial",8,-2147483643,1)
+Gui.FormMaint.txtPOPart.MaxLength(20)
+Gui.FormMaint.txtPOPart.Event(GotFocus,txtPOPart_GotFocus)
+Gui.FormMaint.txtPOPart.Event(LostFocus,txtPOPart_LostFocus)
+Gui.FormMaint.txtWOPart.Create(TextBox,"",True,2175,300,0,2925,450,True,0,"Arial",8,-2147483643,1)
+Gui.FormMaint.txtWOPart.MaxLength(20)
+Gui.FormMaint.txtWOPart.Event(GotFocus,txtWOPart_GotFocus)
+Gui.FormMaint.cmdPOPart.Create(Button)
+Gui.FormMaint.cmdPOPart.Size(435,375)
+Gui.FormMaint.cmdPOPart.Position(2400,420)
+Gui.FormMaint.cmdPOPart.Caption("^")
+Gui.FormMaint.cmdPOPart.Event(Click,cmdPOPart_Click)
+Gui.FormMaint.cmdWOPart.Create(Button)
+Gui.FormMaint.cmdWOPart.Size(435,375)
+Gui.FormMaint.cmdWOPart.Position(5190,420)
+Gui.FormMaint.cmdWOPart.Caption("^")
+Gui.FormMaint.cmdWOPart.Event(Click,cmdWOPart_Click)
+Gui.FormMaint.cmdAdd.Create(Button)
+Gui.FormMaint.cmdAdd.Size(855,375)
+Gui.FormMaint.cmdAdd.Position(5700,420)
+Gui.FormMaint.cmdAdd.Caption("Add")
+Gui.FormMaint.cmdAdd.Event(Click,cmdAdd_Click)
+Gui.FormMaint.GsGridPart.Create(GsGridControl)
+Gui.FormMaint.GsGridPart.Size(6405,8295)
+Gui.FormMaint.GsGridPart.Position(150,900)
+Gui.FormMaint.GsGridPart.Anchor(15)
+Gui.FormMaint.GsGridPart.Event(RowCellClick,GsGridPart_RowCellClick)
+Gui.FormMaint.cmdSave.Create(Button)
+Gui.FormMaint.cmdSave.Size(855,375)
+Gui.FormMaint.cmdSave.Position(180,9285)
+Gui.FormMaint.cmdSave.Anchor(6)
+Gui.FormMaint.cmdSave.Caption("Save")
+Gui.FormMaint.cmdSave.Event(Click,cmdSave_Click)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String,"")
+
+F.Intrinsic.Control.CallSub(Get_Data)
+F.Intrinsic.Control.CallSub(Set_Prop)
+
+Gui.FormMaint..Show
+Gui.FormMaint..AlwaysOnTop(True)
+Gui.FormMaint..AlwaysOnTop(False)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: GCG_6662_Part_Maint.g2u {0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormMaint_UnLoad)
+Function.Intrinsic.Control.EndIf
+Program.Sub.Main.End
+
+Program.Sub.cmdSave_Click.Start
+F.Intrinsic.Control.SetErrorHandler("cmdSave_Click_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String,"")
+
+F.Intrinsic.Control.If(V.DataTable.POPART.RowCount--,<>,-1)
+	F.ODBC.Connection!Con.OpenCompanyConnection
+	F.Data.DataTable.SaveToDB("POPART","con","GCG_6662_PART_MAINT","PO_PART",7,"PO_Part@!@PO_PART*!*WO_PART@!@WO_PART")
+	F.ODBC.Connection!Con.Close
+	F.Intrinsic.UI.Msgbox("PO Part Data Saved","Attention")
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("cmdSave_Click_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: GCG_6662_Part_Maint.g2u {0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormMaint_UnLoad)
+Function.Intrinsic.Control.EndIf
+Program.Sub.cmdSave_Click.End
+
+Program.Sub.FormMaint_UnLoad.Start
+F.Intrinsic.Control.SetErrorHandler("FormMaint_UnLoad_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String,"")
+
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("FormMaint_UnLoad_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.Control.End
+Function.Intrinsic.Control.EndIf
+Program.Sub.FormMaint_UnLoad.End
+
+Program.Sub.cmdAdd_Click.Start
+F.Intrinsic.Control.SetErrorHandler("cmdAdd_Click_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String,"")
+V.Local.sPOPart.Declare(String,"")
+V.Local.sWOPart.Declare(String,"")
+V.Local.sFilter.Declare(String,"")
+
+V.Local.sPOPart.Set(V.Screen.FormMaint!txtPOPart.Text)
+V.Local.sWOPart.Set(V.Screen.FormMaint!txtWOPart.Text)
+
+F.Intrinsic.Control.If(V.Local.sPOPart.Trim,<>,"","AND",V.Local.sWOPart.Trim,<>,"")
+	F.Intrinsic.String.Build("PO_Part = '{0}'",V.Local.sPOPart.Trim,V.Local.sFilter)
+	F.Data.DataView.Create("POPART","Temp",22,V.Local.sFilter,"")
+	F.Intrinsic.Control.If(V.DataView.POPart!Temp.RowCount--,<>,-1)
+		F.Data.DataTable.SetValue("POPART",V.DataView.POPart!Temp(V.DataView.POPart!Temp.RowCount--).DataTableIndex,"WO_Part",V.Local.sWOPart.Trim)
+	F.Intrinsic.Control.Else
+		F.Data.DataTable.AddRow("POPART","PO_Part",V.Local.sPOPart.Trim,"WO_Part",V.Local.sWOPart.Trim)
+	F.Intrinsic.Control.EndIf
+	F.Data.DataView.Close("POPART","Temp")
+	F.Intrinsic.Control.BlockEvents
+	Gui.FormMaint.txtPOPart.Text("")
+	Gui.FormMaint.txtWOPart.Text("")
+	F.Intrinsic.Control.UnBlockEvents
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("cmdAdd_Click_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: GCG_6662_Part_Maint.g2u {0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormMaint_UnLoad)
+Function.Intrinsic.Control.EndIf
+Program.Sub.cmdAdd_Click.End
+
+Program.Sub.cmdWOPart_Click.Start
+F.Intrinsic.Control.SetErrorHandler("cmdWOPart_Click_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String,"")
+V.Local.sTitles.Declare(String,"")
+V.Local.sWidths.Declare(String,"")
+V.Local.sRet.Declare(String,"")
+V.Local.sFilter.Declare(String,"")
+
+F.Intrinsic.UI.SetBrowserHotTypeAhead(True)
+
+F.Intrinsic.UI.Browser(105,"",V.Local.sRet)
+
+F.Intrinsic.Control.BlockEvents
+F.Intrinsic.Control.If(V.Local.sRet,<>,"***CANCEL***")
+	F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+	Gui.FormMaint.txtWOPart.Text(V.Local.sRet.Trim)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.UnBlockEvents
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("cmdWOPart_Click_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: GCG_6662_Part_Maint.g2u {0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormMaint_UnLoad)
+Function.Intrinsic.Control.EndIf
+Program.Sub.cmdWOPart_Click.End
+
+Program.Sub.txtWOPart_GotFocus.Start
+F.Intrinsic.Control.SetErrorHandler("txtWOPart_GotFocus_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String,"")
+
+Gui.FormMaint.txtWOPart.SelectAll
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("txtWOPart_GotFocus_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: GCG_6662_Part_Maint.g2u {0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormMaint_UnLoad)
+Function.Intrinsic.Control.EndIf
+Program.Sub.txtWOPart_GotFocus.End
+
+Program.Sub.txtPOPart_GotFocus.Start
+F.Intrinsic.Control.SetErrorHandler("txtPOPart_GotFocus_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String,"")
+
+Gui.FormMaint.txtPOPart.SelectAll
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("txtPOPart_GotFocus_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: GCG_6662_Part_Maint.g2u {0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormMaint_UnLoad)
+Function.Intrinsic.Control.EndIf
+Program.Sub.txtPOPart_GotFocus.End
+
+Program.Sub.cmdPOPart_Click.Start
+F.Intrinsic.Control.SetErrorHandler("cmdPOPart_Click_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String,"")
+V.Local.sTitles.Declare(String,"")
+V.Local.sWidths.Declare(String,"")
+V.Local.sRet.Declare(String,"")
+V.Local.sFilter.Declare(String,"")
+
+F.Intrinsic.UI.SetBrowserHotTypeAhead(True)
+
+F.Intrinsic.UI.Browser(105,"",V.Local.sRet)
+
+F.Intrinsic.Control.BlockEvents
+F.Intrinsic.Control.If(V.Local.sRet,<>,"***CANCEL***")
+	F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+	Gui.FormMaint.txtPOPart.Text(V.Local.sRet.Trim)
+	F.Intrinsic.String.Build("PO_Part = '{0}'",V.Local.sRet.Trim,V.Local.sFilter)
+	F.Data.DataView.Create("POPART","Temp",22,V.Local.sFilter,"")
+	F.Intrinsic.Control.If(V.DataView.POPart!Temp.RowCount--,<>,-1)
+		Gui.FormMaint.txtWOPart.Text(V.DataView.POPART!Temp(V.DataView.POPART!Temp.RowCount--).WO_Part!FieldValTrim)
+	F.Intrinsic.Control.EndIf
+	F.Data.DataView.Close("POPART","Temp")
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.UnBlockEvents
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("cmdPOPart_Click_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: GCG_6662_Part_Maint.g2u {0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormMaint_UnLoad)
+Function.Intrinsic.Control.EndIf
+Program.Sub.cmdPOPart_Click.End
+
+Program.Sub.Get_Data.Start
+F.Intrinsic.Control.SetErrorHandler("Get_Data_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String,"")
+
+F.ODBC.Connection!Con.OpenCompanyConnection
+
+F.Data.DataTable.CreateFromSQL("POPART","Con","Select PO_Part, WO_Part From GCG_6662_Part_Maint",True)
+
+F.Data.DataTable.AddColumn("POPART","DELETE_ROW",String)
+
+F.ODBC.Connection!Con.Close
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Get_Data_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: GCG_6662_Part_Maint.g2u {0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormMaint_UnLoad)
+Function.Intrinsic.Control.EndIf
+Program.Sub.Get_Data.End
+
+Program.Sub.Set_Prop.Start
+F.Intrinsic.Control.SetErrorHandler("Set_Prop_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String,"")
+
+Gui.FormMaint.GsGridPart.AddGridviewFromDatatable("GPART","POPART")
+
+Gui.FormMaint.GsGridPart.SetGridviewProperty("GPART","Editable",False)
+Gui.FormMaint.GsGridPart.SetGridviewProperty("GPART","ReadOnly",True)
+Gui.FormMaint.GsGridPart.SetGridviewProperty("GPART","OptionsViewShowAutoFilterRow",True)
+Gui.FormMaint.GsGridPart.SetGridviewProperty("GPART","OptionsFindAlwaysVisible",True)
+
+Gui.FormMaint.GsGridPart.SetColumnProperty("GPART","PO_Part","Caption","PO Part")
+Gui.FormMaint.GsGridPart.SetColumnProperty("GPART","WO_Part","Caption","WO Part")
+
+Gui.FormMaint.GsGridPart.SetColumnProperty("GPART","DELETE_ROW","Caption"," ")
+Gui.FormMaint.GsGridPart.ColumnEdit("GPART","DELETE_ROW","EditorButton","Delete Record")
+
+
+Gui.FormMaint.GsGridPart.MainView("GPART")
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Set_Prop_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: GCG_6662_Part_Maint.g2u {0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormMaint_UnLoad)
+Function.Intrinsic.Control.EndIf
+Program.Sub.Set_Prop.End
+
+Program.Sub.GsGridPart_RowCellClick.Start
+F.Intrinsic.Control.SetErrorHandler("GsGridPart_RowCellClick_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String,"")
+V.Local.sTitles.Declare(String)
+V.Local.sWidths.Declare(String)
+V.Local.sRet.Declare(String)
+V.Local.iRet.Declare(Long,0)
+
+F.Intrinsic.Control.If(V.Args.Column.UCase,=,"WO_PART")
+	F.Intrinsic.UI.SetBrowserHotTypeAhead(True)
+
+	F.Intrinsic.UI.Browser(105,"",V.Local.sRet)
+
+	F.Intrinsic.Control.If(V.Local.sRet,<>,"***CANCEL***")
+		F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+		F.Data.DataTable.SetValue("POPART",V.Args.RowIndex,"WO_Part",V.Local.sRet.Trim)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.ElseIf(V.Args.Column.UCase,=,"DELETE_ROW")
+	F.Intrinsic.UI.Msgbox("Delete Record?","Attention",4,V.Local.iRet)
+	F.Intrinsic.Control.If(V.Local.iRet,=,6)
+		F.Data.DataTable.DeleteRow("POPART",V.Args.RowIndex)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("GsGridPart_RowCellClick_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: GCG_6662_Part_Maint.g2u {0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormMaint_UnLoad)
+Function.Intrinsic.Control.EndIf
+Program.Sub.GsGridPart_RowCellClick.End
+
+Program.Sub.txtPOPart_LostFocus.Start
+F.Intrinsic.Control.SetErrorHandler("txtPOPart_LostFocus_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String,"")
+V.Local.sPOPart.Declare(String,"")
+V.Local.sFilter.Declare(String,"")
+
+V.Local.sPOPart.Set(V.Screen.FormMaint!txtPOPart.Text)
+
+F.Intrinsic.Control.If(V.Local.sPOPart.Trim,<>,"")
+	F.Intrinsic.String.Build("PO_Part = '{0}'",V.Local.sPOPart.Trim,V.Local.sFilter)
+	F.Data.DataView.Create("POPART","Temp",22,V.Local.sFilter,"")
+	F.Intrinsic.Control.If(V.DataView.POPart!Temp.RowCount--,<>,-1)
+		Gui.FormMaint.txtWOPart.Text(V.DataView.POPART!Temp(V.DataView.POPART!Temp.RowCount--).WO_Part!FieldValTrim)
+	F.Intrinsic.Control.EndIf
+	F.Data.DataView.Close("POPART","Temp")
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("txtPOPart_LostFocus_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: GCG_6662_Part_Maint.g2u {0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormMaint_UnLoad)
+Function.Intrinsic.Control.EndIf
+Program.Sub.txtPOPart_LostFocus.End
